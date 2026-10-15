@@ -1,0 +1,278 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Factores de conversión · Demo</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@500;600;700&display=swap');
+:root{--bg:#f6f5f2;--ink:#171717;--muted:#77736c;--purple:#6c5ce7;--red:#e53935}
+*{box-sizing:border-box}body{margin:0;height:100vh;overflow:hidden;background:radial-gradient(circle at 82% 12%,rgba(108,92,231,.08),transparent 25%),var(--bg);font-family:"DM Sans",sans-serif;color:var(--ink)}
+main{height:100vh;display:flex;flex-direction:column;padding:42px 52px 30px}.top{display:flex;justify-content:space-between;align-items:center}.kicker{font-size:16px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}.goal{display:flex;flex-direction:column;align-items:flex-start}.goal > .goal-label{font-size:13px;font-weight:700;letter-spacing:.15em;color:#9a948c;margin-bottom:2px}.goal strong{font-size:clamp(34px,4vw,58px);font-weight:700;letter-spacing:-.05em;color:#f04b32;line-height:1}.target{display:inline-block;position:relative;transition:.25s;font-size:inherit;font-weight:inherit;letter-spacing:inherit;color:inherit}.target.goalFocus{color:inherit}
+.goal strong .goalOther,.goal strong .target{transition:opacity .28s ease,filter .28s ease}
+.goal.goalDim .goalOther,.goal.goalDim .target:not(.goalPulse){opacity:.58;filter:none}.goal.goalDim .arrowSource{opacity:1;color:#f04b32;text-shadow:0 0 14px rgba(240,75,50,.28);animation:sourceAlive 1.15s ease-in-out infinite}@keyframes sourceAlive{0%,100%{transform:scale(1)}50%{transform:scale(1.08)}}
+.target.goalPulse{
+  z-index:3;
+  animation:goalPulse .82s ease-in-out infinite;
+}
+.target.goalPulse::after{
+  content:"";position:absolute;left:50%;top:50%;
+  width:1.25em;height:1.25em;border:5px solid #ffd43b;border-radius:50%;
+  transform:translate(-50%,-50%) scale(.92);
+  box-shadow:0 0 0 8px rgba(255,212,59,.16),0 0 28px rgba(255,193,7,.45);
+  animation:ringPulse .82s ease-in-out infinite;
+  pointer-events:none;
+}
+@keyframes goalPulse{
+  0%,100%{color:#f04b32;transform:scale(1)}
+  50%{color:#ff2a1c;transform:scale(1.16)}
+}
+@keyframes ringPulse{
+  0%,100%{transform:translate(-50%,-50%) scale(.88);opacity:.78}
+  50%{transform:translate(-50%,-50%) scale(1.08);opacity:1}
+}
+.stage{flex:1;position:relative;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;gap:18px;padding-top:70px}.expression{margin-top:18px}.expression{display:flex;align-items:center;gap:18px;font-size:clamp(38px,4.45vw,70px);font-weight:650;letter-spacing:-.045em;white-space:nowrap}
+.r{opacity:0;transform:translateY(11px) scale(.985);transition:opacity .34s ease,transform .34s cubic-bezier(.2,.8,.2,1)}.r.show{opacity:1;transform:none}
+.start{display:inline-flex;align-items:center;gap:10px}.ufrac,.frac,.finalunit{display:inline-grid;grid-template-rows:1fr 3px 1fr;align-items:center;justify-items:center}.ufrac{min-width:72px;font-size:.82em;line-height:.88}.frac{min-width:178px}.finalunit{min-width:58px;font-size:.78em;line-height:.88}.line{width:100%;height:3px;background:currentColor;border-radius:4px}.slot{min-height:1.18em;padding:7px 12px;display:flex;align-items:center;gap:.17em}.times,.eq{font-weight:500;color:#55514b}
+.unit{display:inline-block;position:relative;transition:color .25s,transform .25s}.unit.focus{color:var(--purple);transform:scale(1.06)}.unit::after{content:"";position:absolute;left:-8%;top:51%;width:116%;height:4px;background:var(--red);border-radius:5px;transform:rotate(-12deg) scaleX(0);transform-origin:left;transition:transform .36s cubic-bezier(.2,.9,.2,1)}.unit.cancel{color:#66625c}.unit.cancel::after{transform:rotate(-12deg) scaleX(1)}
+.prompt{height:170px;text-align:center;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.q{font-size:clamp(30px,3.4vw,52px);font-weight:700;letter-spacing:-.035em;color:#ff5a36;opacity:0;transform:translateY(8px);transition:.3s}
+.a{font-size:clamp(34px,4vw,62px);font-weight:700;letter-spacing:-.045em;color:var(--purple);margin-top:4px;opacity:0;transform:translateY(8px) scale(.98);transition:.3s}
+.why{font-size:clamp(20px,2.1vw,31px);font-weight:650;color:#34312d;margin-top:7px;opacity:0;transform:translateY(6px);transition:.3s}
+.q.show,.a.show,.why.show{opacity:1;transform:none}
+.resultnum{font-weight:700}.bottom{display:flex;align-items:center;gap:18px;color:#8c8880;font-size:13px}.progress{height:3px;flex:1;background:#e3e0da;border-radius:10px;overflow:hidden}.progress span{display:block;height:100%;background:var(--ink);width:0;transition:.3s}.key{border:1px solid #d9d6cf;background:#ffffff8c;padding:3px 7px;border-radius:6px}
+#arrowLayer{position:fixed;inset:0;width:100vw;height:100vh;pointer-events:none;z-index:20;overflow:visible}
+#curveArrow{fill:none;stroke:#ffd43b;stroke-width:7;stroke-linecap:round;stroke-linejoin:round;opacity:0;filter:drop-shadow(0 4px 7px rgba(255,180,0,.25))}
+#curveArrow.arrowOn{opacity:1;animation:drawArrow 1.05s cubic-bezier(.2,.8,.2,1) forwards}
+@keyframes drawArrow{from{stroke-dashoffset:var(--arrowLen)}to{stroke-dashoffset:0}}
+
+.goal.goalDim .arrowSource{position:relative;z-index:3}
+.goal.goalDim .arrowSource::after{
+ content:"";position:absolute;left:50%;top:50%;
+ width:1.35em;height:1.25em;border:5px solid #ffd43b;border-radius:50%;
+ transform:translate(-50%,-50%);
+ box-shadow:0 0 0 8px rgba(255,212,59,.12),0 0 24px rgba(255,193,7,.30);
+ pointer-events:none;
+ animation:sourceRing 1.15s ease-in-out infinite;
+}
+@keyframes sourceRing{
+ 0%,100%{transform:translate(-50%,-50%) scale(.92);opacity:.78}
+ 50%{transform:translate(-50%,-50%) scale(1.04);opacity:1}
+}
+
+/* Classroom-size text: never let explanatory beats become tiny */
+.question{font-size:clamp(34px,4.2vw,64px)!important;line-height:1.02!important}
+.answer{font-size:clamp(38px,4.8vw,72px)!important;line-height:1!important}
+.why{font-size:clamp(36px,4vw,60px)!important;line-height:1.05!important;font-weight:800!important;color:#2d2a26!important}
+.hint,.counter{font-size:16px!important}
+.staircase{
+ position:fixed;right:6vw;top:47%;width:310px;height:230px;
+ z-index:18;opacity:0;transform:translateY(12px) scale(.96);
+ transition:opacity .25s ease,transform .35s cubic-bezier(.2,.8,.2,1);
+ pointer-events:none;
+}
+.staircase.on{opacity:1;transform:translateY(0) scale(1)}
+.stair{position:absolute;width:82px;height:48px;border-bottom:5px solid #ffd43b;
+ display:flex;align-items:flex-end;justify-content:center;padding-bottom:7px;
+ font-size:29px;font-weight:800;color:#2d2a26}
+.stair::after{content:"";position:absolute;right:-5px;bottom:-5px;width:5px;height:52px;background:#ffd43b;border-radius:4px}
+.s0{left:0;top:0}.s1{left:70px;top:48px}.s2{left:140px;top:96px}.s3{left:210px;top:144px}
+.stairNote{position:absolute;left:22px;top:205px;font-size:18px;font-weight:800;letter-spacing:.03em;color:#f04b32;white-space:nowrap}
+@media(max-width:900px){.staircase{right:2vw;transform:scale(.82);transform-origin:right center}.staircase.on{transform:scale(.82)}}
+
+/* Escalera de unidades junto a "3 SALTOS" */
+.staircase{
+ position:fixed!important;
+ left:calc(50% + 215px)!important;
+ right:auto!important;
+ top:175px!important;
+ width:min(590px,45vw)!important;
+ height:455px!important;
+ z-index:18!important;
+ opacity:0;
+ transform:translateY(8px) scale(.96)!important;
+ transform-origin:left center!important;
+ transition:opacity .22s ease,transform .32s cubic-bezier(.2,.8,.2,1)!important;
+ pointer-events:none;
+}
+.staircase.on{opacity:1!important;transform:translateY(0) scale(1)!important}
+.staircase svg{width:100%;height:100%;overflow:visible}
+.stairsLine{fill:none;stroke:#24211e;stroke-width:7;stroke-linecap:round;stroke-linejoin:round}
+.units text{font-family:DM Sans,sans-serif;font-size:40px;font-weight:800;fill:#2d2a26;text-anchor:middle}
+.jump{fill:none;stroke:#f04b32;stroke-width:7;stroke-linecap:round;stroke-linejoin:round}
+.times text{font-family:DM Sans,sans-serif;font-size:40px;font-weight:900;fill:#f04b32;text-anchor:middle}
+@media(max-width:1000px){.staircase{width:44vw!important}}
+
+.jumpGroup{opacity:0;transition:opacity .22s ease}
+.jumpGroup.on{opacity:1}
+.jump{fill:none;stroke:#24211e!important;stroke-width:7!important;stroke-linecap:round;stroke-linejoin:round}
+.jumpTimes{font-family:DM Sans,sans-serif;font-size:40px;font-weight:900;fill:#24211e;text-anchor:middle}
+.units text{transition:.25s ease}
+.units text.unitMark{fill:#6c5ce7!important;font-size:48px!important;font-weight:900!important;
+ filter:drop-shadow(0 4px 10px rgba(108,92,231,.18))}
+.units text.intermediateUnit{opacity:.30;font-weight:650!important}
+.unit.redFocus{color:#f04b32!important;transform:scale(1.12);text-shadow:0 0 16px rgba(240,75,50,.18)}
+
+/* Final cancellation sequence */
+.unit.cancel{
+ color:#e54836!important;
+ animation:none!important;
+ transform:none!important;
+ text-shadow:none!important;
+}
+
+.unit.redFocus{
+ color:#e54836!important;
+ animation:unitHeartbeat .78s ease-in-out infinite!important;
+ transform-origin:center center;
+ text-shadow:0 0 12px rgba(229,72,54,.18)!important;
+}
+@keyframes unitHeartbeat{
+ 0%,100%{transform:scale(1.04)}
+ 50%{transform:scale(1.18)}
+}
+
+/* Surviving units: green and static */
+.unit.greenFocus{
+ color:#24a35a!important;
+ animation:none!important;
+ transform:none!important;
+ text-shadow:none!important;
+}
+.unit.cancel.redFocus{
+ animation:none!important;
+ transform:none!important;
+ text-shadow:none!important;
+}
+</style></head><body><main>
+<div class="top"><div class="goal" id="goal"><span class="goal-label">OBJETIVO</span><strong><span class="goalOther"><span class="sourceKm" style="display:inline-block">km</span>/<span class="sourceH" style="display:inline-block">h</span> → </span><span class="target targetM">m</span><span class="goalOther slash">/</span><span class="target targetS">s</span></strong></div></div>
+<section class="stage">
+<div class="prompt"><div class="q" id="q"></div><div class="a" id="a"></div><div class="why" id="why"></div></div>
+<div class="expression">
+<span class="r start" id="start"><span>72</span><span class="ufrac"><span class="unit kmA">km</span><span class="line"></span><span class="unit hA">h</span></span></span>
+<span class="r times" id="x1">×</span>
+<span class="frac"><span class="slot"><span class="r" id="v1000">1000</span><span class="r unit mA" id="mA">m</span></span><span class="r line" id="bar1"></span><span class="slot"><span class="r" id="oneKm">1</span><span class="r unit kmB" id="kmB">km</span></span></span>
+<span class="r times" id="x2">×</span>
+<span class="frac"><span class="slot"><span class="r" id="oneH">1</span><span class="r unit hB" id="hB">h</span></span><span class="r line" id="bar2"></span><span class="slot"><span class="r" id="v3600">3600</span><span class="r unit sA" id="sA">s</span></span></span>
+<span class="r eq" id="eq">=</span><span class="r resultnum" id="num20">20</span>
+<span class="r finalunit" id="finalunit"><span>m</span><span class="line"></span><span>s</span></span>
+</div></section>
+<div class="bottom"><span><span class="key">Espacio</span> avanzar &nbsp; <span class="key">←</span><span class="key">→</span></span><div class="progress"><span id="prog"></span></div><span id="count"></span></div>
+<div id="staircase" class="staircase" aria-hidden="true">
+<svg viewBox="0 -35 640 485" role="img" aria-label="Escalera de unidades">
+  <defs>
+    <marker id="miniArrow" markerWidth="4.6" markerHeight="4.6" refX="3.9" refY="2.3" orient="auto">
+      <path d="M0,0 L4.6,2.3 L0,4.6 z" fill="#24211e"/>
+    </marker>
+  </defs>
+
+  <path class="stairsLine" d="M28 78 H168 V188 H308 V298 H448 V408 H588"/>
+
+  <g class="units">
+    <text x="96" y="62">km</text>
+    <text class="intermediateUnit" x="238" y="172">hm</text>
+    <text class="intermediateUnit" x="378" y="282">dam</text>
+    <text x="518" y="392">m</text>
+  </g>
+
+  <!-- arcos casi circulares sobre cada esquina -->
+  <g class="jumpGroup jump1">
+    <path class="jump" d="M112 30 C158 -8,210 26,196 96" marker-end="url(#miniArrow)"/>
+    <text class="jumpTimes" x="184" y="12">×10</text>
+  </g>
+  <g class="jumpGroup jump2">
+    <path class="jump" d="M252 140 C298 102,350 136,336 206" marker-end="url(#miniArrow)"/>
+    <text class="jumpTimes" x="324" y="122">×10</text>
+  </g>
+  <g class="jumpGroup jump3">
+    <path class="jump" d="M392 250 C438 212,490 246,476 316" marker-end="url(#miniArrow)"/>
+    <text class="jumpTimes" x="464" y="232">×10</text>
+  </g>
+</svg>
+</div>
+<svg id="arrowLayer" aria-hidden="true">
+  <defs>
+    <marker id="arrowHead" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L10,5 L0,10 z" fill="#f04b32"/>
+    </marker>
+  </defs>
+  <path id="curveArrow" d="" marker-end="url(#arrowHead)"/>
+</svg>
+</main><script>
+const steps=[
+ {show:["start"]},{show:["x1"]},{show:["bar1"]},
+ {q:"COMO km ESTÁ ARRIBA… ¿DÓNDE LO PONEMOS?"},{a:"ABAJO"},{show:["kmB"]},
+ {q:"¿A QUÉ UNIDAD QUEREMOS LLEGAR?"},{a:"AL METRO",pulse:[".targetM"],source:[".sourceKm"],arrow:[".sourceKm",".targetM"]},{clearGoal:true,show:["mA"]},
+ {q:"¿QUIÉN ES MAYOR?"},{a:"EL KILÓMETRO",focus:[".kmB"]},
+ {why:"ASÍ QUE LE PONEMOS UN 1 AL km.",focus:[".kmB"]},{show:["oneKm"],focus:[".kmB"]},
+ {q:"DE km A m… ¿CUÁNTOS SALTOS HAY?"},
+ {stairs:true,stairStage:0},
+ {stairs:true,stairStage:1},
+ {stairs:true,stairStage:2},
+ {stairs:true,stairStage:3},
+ {why:"ASÍ QUE MULTIPLICAMOS POR 1000."},{show:["v1000"]},
+ {show:["x2"]},{show:["bar2"]},
+ {q:"LA h ESTÁ ABAJO. ¿DÓNDE LA PONEMOS?"},{a:"ARRIBA"},{show:["hB"]},
+ {q:"¿A QUÉ UNIDAD QUEREMOS LLEGAR?"},{a:"AL SEGUNDO",pulse:[".targetS"],source:[".sourceH"],arrow:[".sourceH",".targetS"]},{clearGoal:true,show:["sA"]},
+ {q:"¿QUIÉN ES MAYOR?"},{a:"LA HORA",focus:[".hB"]},
+ {why:"ASÍ QUE LE PONEMOS UN 1 A LA h.",focus:[".hB"]},{show:["oneH"],focus:[".hB"]},
+ {q:"1 HORA SON…"},{a:"¡3600 s!"},{show:["v3600"]},
+ {show:["eq"],why:"AHORA HACEMOS LA CUENTA."},{show:["num20"],a:"20"},
+ {q:"MIRA LOS km"},
+ {redFocus:[".kmA",".kmB"],why:"UNO ESTÁ ARRIBA Y OTRO ABAJO…"},
+ {redFocus:[".kmA",".kmB"],why:"ASÍ QUE SE VAN"},
+ {cancel:[".kmA",".kmB"]},
+ {cancel:[".kmA",".kmB"],redFocus:[".hA",".hB"],q:"AHORA MIRA LAS h"},
+ {cancel:[".kmA",".kmB"],redFocus:[".hA",".hB"],why:"UNA ESTÁ ABAJO Y OTRA ARRIBA…"},
+ {cancel:[".kmA",".kmB"],redFocus:[".hA",".hB"],why:"ASÍ QUE SE VAN"},
+ {cancel:[".kmA",".kmB",".hA",".hB"]},
+ {cancel:[".kmA",".kmB",".hA",".hB"],q:"¿QUÉ UNIDADES HAN SOBREVIVIDO?"},
+ {cancel:[".kmA",".kmB",".hA",".hB"],greenFocus:[".mA",".sA"]},
+ {cancel:[".kmA",".kmB",".hA",".hB"],greenFocus:[".mA",".sA"],a:"m ARRIBA · s ABAJO"},
+ {cancel:[".kmA",".kmB",".hA",".hB"],show:["finalunit"],why:"ESA ES NUESTRA UNIDAD FINAL."}
+]
+let cur=0;
+
+function setArrow(fromSel,toSel){
+ const path=document.getElementById("curveArrow");
+ path.classList.remove("arrowOn"); path.setAttribute("d","");
+ if(!fromSel||!toSel)return;
+ const a=document.querySelector(fromSel).getBoundingClientRect();
+ const b=document.querySelector(toSel).getBoundingClientRect();
+ const x1=a.left+a.width/2, y1=a.bottom+8;
+ const x2=b.left+b.width/2, y2=b.bottom+18;
+ // A visible loop below the objective: curves down and back up to target.
+ const drop=Math.max(70,Math.min(125,Math.abs(x2-x1)*1.05+65));
+ const c1x=x1+22, c1y=y1+drop;
+ const c2x=x2-30, c2y=y2+drop;
+ path.setAttribute("d",`M ${x1} ${y1} C ${c1x} ${c1y}, ${c2x} ${c2y}, ${x2} ${y2}`);
+ const len=path.getTotalLength();
+ path.style.strokeDasharray=len;
+ path.style.strokeDashoffset=len;
+ path.style.setProperty("--arrowLen",len);
+ void path.getBoundingClientRect();
+ path.classList.add("arrowOn");
+}
+function render(){
+ setArrow(null,null);
+ document.getElementById("staircase").classList.remove("on");
+ document.querySelectorAll(".jumpGroup").forEach(e=>e.classList.remove("on"));
+ 
+ document.querySelectorAll(".unit").forEach(e=>e.classList.remove("redFocus","greenFocus"));
+ document.querySelectorAll(".r").forEach(e=>e.classList.remove("show"));
+ document.querySelectorAll(".unit").forEach(e=>e.classList.remove("focus","cancel"));document.querySelectorAll(".target").forEach(e=>e.classList.remove("goalFocus","goalPulse"));document.querySelectorAll(".sourceKm,.sourceH").forEach(e=>e.classList.remove("arrowSource"));document.getElementById("goal").classList.remove("goalDim");
+ let q="",a="",why="",arrow=null,currentStairs=false,currentStairStage=null;
+ for(let i=0;i<cur;i++){const s=steps[i];(s.show||[]).forEach(id=>document.getElementById(id).classList.add("show"));(s.focus||[]).forEach(sel=>document.querySelectorAll(sel).forEach(e=>e.classList.add("focus")));(s.redFocus||[]).forEach(sel=>document.querySelectorAll(sel).forEach(e=>e.classList.add("redFocus")));(s.greenFocus||[]).forEach(sel=>document.querySelectorAll(sel).forEach(e=>e.classList.add("greenFocus")));(s.goal||[]).forEach(sel=>document.querySelectorAll(sel).forEach(e=>e.classList.add("goalFocus")));(s.pulse||[]).forEach(sel=>{document.getElementById("goal").classList.add("goalDim");document.querySelectorAll(sel).forEach(e=>e.classList.add("goalPulse"))});(s.source||[]).forEach(sel=>document.querySelectorAll(sel).forEach(e=>e.classList.add("arrowSource")));if(s.clearGoal){document.querySelectorAll(".target").forEach(e=>e.classList.remove("goalPulse"));document.querySelectorAll(".sourceKm,.sourceH").forEach(e=>e.classList.remove("arrowSource"));document.getElementById("goal").classList.remove("goalDim");arrow=null;}(s.cancel||[]).forEach(sel=>document.querySelectorAll(sel).forEach(e=>{e.classList.remove("focus");e.classList.add("cancel")}));q=s.q||"";a=s.a||"";why=s.why||"";arrow=s.arrow||null;if(s.clearGoal){q="";a="";why="";}currentStairs=!!s.stairs;currentStairStage=(s.stairStage??null);}
+ const qe=document.getElementById("q"),ae=document.getElementById("a"),we=document.getElementById("why");
+ qe.textContent=q;ae.textContent=a;we.textContent=why;
+ qe.classList.toggle("show",!!q);ae.classList.toggle("show",!!a);we.classList.toggle("show",!!why);
+ if(currentStairs){
+   document.getElementById("staircase").classList.add("on");
+   if(currentStairStage>=1) document.querySelector(".jump1").classList.add("on");
+   if(currentStairStage>=2) document.querySelector(".jump2").classList.add("on");
+   if(currentStairStage>=3) document.querySelector(".jump3").classList.add("on");
+ }
+ if(arrow) requestAnimationFrame(()=>setArrow(arrow[0],arrow[1]));
+ document.getElementById("prog").style.width=(cur/steps.length*100)+"%";document.getElementById("count").textContent=cur+" / "+steps.length;
+}
+function next(){if(cur<steps.length){cur++;render()}}function prev(){if(cur>0){cur--;render()}}
+document.addEventListener("keydown",e=>{if(e.code==="Space"||e.key==="ArrowRight"){e.preventDefault();next()}else if(e.key==="ArrowLeft"){e.preventDefault();prev()}});
+document.addEventListener("click",e=>e.clientX>innerWidth*.25?next():prev());render();
+</script></body></html>
